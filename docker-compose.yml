@@ -1,0 +1,16 @@
+services:
+  # Service for PostgreSQL
+  dev-db:
+    image: postgres:14
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: new_password
+      POSTGRES_DB: itsmdb
+    networks:
+      - silicon-networks
+
+networks:
+  silicon-networks:
+    driver: bridge

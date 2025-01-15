@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Title {
+  MR
+  MRS
+  MISS
+}
+
+enum Department {
+  ACCOUNTING
+  FINANCE
+  HR
+  IT
+  SALES
+  MARKETING
+  // Add more departments as needed
+}
+
+model AssetType {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique // ประเภทอุปกรณ์ เช่น Monitor, Mouse, UPS
+  description String? // คำอธิบายเพิ่มเติมเกี่ยวกับประเภท
+  equipment   ITEquipment[] // ความสัมพันธ์กับ ITEquipment
+}
+
+model ITEquipment {
+  id             Int       @id @default(autoincrement())
+  brand          String // ยี่ห้อ เช่น Dell, HP
+  model          String // รุ่น เช่น UltraSharp U2723QE
+  specifications Json // สเปก เช่น {"resolution": "4K", "size": "27 inch"}
+  assetTypeId    Int // เชื่อมกับประเภทอุปกรณ์
+  assetType      AssetType @relation(fields: [assetTypeId], references: [id])
+  assets         Asset[] // ความสัมพันธ์กับ Asset
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Asset {
+  id               Int                @id @default(autoincrement())
+  serialNumber     String             @unique // หมายเลขซีเรียล เช่น PC-AC-001
+  equipmentId      Int // เชื่อมโยงกับ ITEquipment
+  equipment        ITEquipment        @relation(fields: [equipmentId], references: [id])
+  assignedToId     Int? // เชื่อมโยงกับ User
+  assignedTo       User?              @relation(fields: [assignedToId], references: [id])
+  status           String             @default("Available") // สถานะ: Available, Assigned, Maintenance
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  StockTransaction StockTransaction[]
+}
+
+model User {
+  id          Int        @id @default(autoincrement())
+  title       Title
+  firstNameTh String
+  lastNameTh  String
+  firstNameEn String
+  lastNameEn  String
+  employeeId  String     @unique
+  department  Department
+  email       String     @unique
+
+  // System access preferences
+  useNas      Boolean @default(false)
+  useInternet Boolean @default(false)
+  useEcons    Boolean @default(false)
+  useNyc      Boolean @default(false)
+
+  // Printer information
+  printerCode     String?
+  printerBrand    String?
+  printerModel    String?
+  printerLocation String?
+
+  // Phone information
+  phoneExt    String?
+  phoneDirect String?
+
+  // Assets assigned to the user
+  assets Asset[] // อุปกรณ์ที่ผู้ใช้ครอบครอง
+  roleId Int // เชื่อมโยงกับ Role
+  role   Role    @relation(fields: [roleId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique // เช่น IT Admin, User
+  users User[]
+}
+
+model StockTransaction {
+  id              Int      @id @default(autoincrement())
+  assetId         Int // เชื่อมกับ Asset
+  asset           Asset    @relation(fields: [assetId], references: [id])
+  transactionType String // เช่น Increase, Decrease
+  quantity        Int // จำนวนที่เปลี่ยนแปลง
+  createdAt       DateTime @default(now()) // วันที่ทำรายการ
+}
